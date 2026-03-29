@@ -56,8 +56,55 @@ services:
     networks:
       - chatify-network
 
+  # ── Metrics Collection (cAdvisor + Prometheus) ────────────────────────────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: chatify-cadvisor
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - chatify-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chatify-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - chatify-network
+
+  # ── Dashboard (Grafana) ───────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chatify-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000" # Mapped to 3001 to avoid colliding with backend running locally
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    networks:
+      - chatify-network
+
 volumes:
   mongo_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:
