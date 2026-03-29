@@ -17,6 +17,7 @@ dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const PORT = ENV.PORT || 3000;
 
+app.set("trust proxy", 1); // Trust Nginx reverse proxy headers (X-Forwarded-For)
 app.use(express.json({ limit: "5mb" })); // req.body
 app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
 app.use(cookieParser());

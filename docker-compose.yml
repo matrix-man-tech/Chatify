@@ -1,0 +1,65 @@
+services:
+  # ── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: chatify-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-chatify}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-chatify_secret}
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - chatify-network
+
+  # ── Backend (Express + Socket.IO) ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chatify-backend
+    restart: unless-stopped
+    # ports:
+    #  - "3000:3000" # Removed to prevent host port collision. Frontend proxies traffic internally.
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override MONGO_URI to point to the mongo container
+      MONGO_URI: mongodb://${MONGO_USERNAME:-chatify}:${MONGO_PASSWORD:-chatify_secret}@mongo:27017/chatify?authSource=admin
+      NODE_ENV: production
+      CLIENT_URL: http://localhost
+    networks:
+      - chatify-network
+
+  # ── Frontend (Nginx + React SPA) ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chatify-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - chatify-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  chatify-network:
+    driver: bridge
