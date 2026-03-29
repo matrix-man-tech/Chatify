@@ -50,9 +50,21 @@ A complete observability stack leveraging **Prometheus**, **cAdvisor**, and **Gr
 
 ## 🚀 Running the Stack Locally
 
-No manual `npm` commands are required anymore. The entire stack comes up with one line.
+No manual `npm` commands are required anymore. The entire stack comes up with Docker.
 
-Ensure you have Docker Desktop installed, then run:
+**1. Environment Variables**
+Since `.env` files are (correctly) excluded from version control, you must create one from the example template before running the app.
+
+```bash
+cd backend
+cp .env.example .env
+
+# Optional: Open backend/.env and add your Cloudinary/Resend API keys
+cd ..
+```
+
+**2. Start the Stack**
+Ensure you have Docker Desktop installed, then run from the root directory:
 
 ```bash
 # Start the Backend, Frontend, MongoDB, Prometheus, Grafana, and cAdvisor:
